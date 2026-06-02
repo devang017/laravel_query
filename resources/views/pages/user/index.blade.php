@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-9xl mx-auto px-6">
+        <div class="max-w-7xl mx-auto px-6">
 
             <!-- Filters -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
