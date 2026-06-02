@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Company;
 use App\Models\Country;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -50,14 +51,14 @@ class MarketplaceSeeder extends Seeder
     {
         collect(Country::factory()->count(self::COUNTRY_COUNT)->raw())
             ->chunk(500)
-            ->each(fn ($countries) => DB::table('countries')->insert($countries->all()));
+            ->each(fn($countries) => DB::table('countries')->insert($countries->all()));
     }
 
     private function seedCompanies(): void
     {
         collect(Company::factory()->count(self::COMPANY_COUNT)->raw())
             ->chunk(1_000)
-            ->each(fn ($companies) => DB::table('companies')->insert($companies->all()));
+            ->each(fn($companies) => DB::table('companies')->insert($companies->all()));
     }
 
     private function seedUsers(): void
@@ -100,7 +101,7 @@ class MarketplaceSeeder extends Seeder
         $rootCount = 75;
         $now = now()->format('Y-m-d H:i:s');
 
-        $roots = collect(range(1, $rootCount))->map(fn ($index) => [
+        $roots = collect(range(1, $rootCount))->map(fn($index) => [
             'name' => "Department {$index} " . Str::title($faker->word()),
             'parent_id' => null,
             'created_at' => $this->randomPastDate(),
@@ -158,7 +159,7 @@ class MarketplaceSeeder extends Seeder
     {
         collect(Warehouse::factory()->count(self::WAREHOUSE_COUNT)->raw())
             ->chunk(500)
-            ->each(fn ($warehouses) => DB::table('warehouses')->insert($warehouses->all()));
+            ->each(fn($warehouses) => DB::table('warehouses')->insert($warehouses->all()));
     }
 
     private function seedProductWarehouse(): void
@@ -233,38 +234,63 @@ class MarketplaceSeeder extends Seeder
         $productMaxId = (int) DB::table('products')->max('id');
         $rows = [];
 
-        for ($index = 1; $index <= self::ORDER_ITEM_COUNT; $index++) {
-            $createdAt = $this->randomPastDate();
+        // for ($index = 1; $index <= self::ORDER_ITEM_COUNT; $index++) {
+        //     $createdAt = $this->randomPastDate();
 
-            $rows[] = [
-                'order_id' => random_int($orderMinId, $orderMaxId),
-                'product_id' => random_int($productMinId, $productMaxId),
-                'quantity' => random_int(1, 5),
-                'price' => $faker->randomFloat(2, 5, 2500),
-                'created_at' => $createdAt,
-                'updated_at' => $createdAt,
-            ];
+        //     $rows[] = [
+        //         'order_id' => random_int($orderMinId, $orderMaxId),
+        //         'product_id' => random_int($productMinId, $productMaxId),
+        //         'quantity' => random_int(1, 5),
+        //         'price' => $faker->randomFloat(2, 5, 2500),
+        //         'created_at' => $createdAt,
+        //         'updated_at' => $createdAt,
+        //     ];
 
-            if (count($rows) === 10_000) {
-                DB::table('order_items')->insert($rows);
+        //     if (count($rows) === 10_000) {
+        //         DB::table('order_items')->insert($rows);
+        //         $rows = [];
+        //     }
+        // }
+
+        // if (! empty($rows)) {
+        //     DB::table('order_items')->insert($rows);
+        // }
+
+        Order::select('id')
+            ->chunkById(10000, function ($orders) use ($faker, $productMinId, $productMaxId) {
+
                 $rows = [];
-            }
-        }
 
-        if (! empty($rows)) {
-            DB::table('order_items')->insert($rows);
-        }
+                foreach ($orders as $order) {
+                    $createdAt = now();
+
+                    $rows[] = [
+                        'order_id' => $order->id,
+                        'product_id' => random_int($productMinId, $productMaxId),
+                        'quantity' => random_int(1, 5),
+                        'price' => $faker->randomFloat(2, 5, 2500),
+                        'created_at' => $createdAt,
+                        'updated_at' => $createdAt,
+                    ];
+                }
+
+                DB::table('order_items')->insert($rows);
+            });
     }
 
     private function syncOrderTotals(): void
     {
         DB::statement(<<<'SQL'
-            UPDATE orders
-            SET total_amount = COALESCE((
-                SELECT SUM(order_items.quantity * order_items.price)
+            UPDATE orders o
+            INNER JOIN (
+                SELECT
+                    order_id,
+                    SUM(quantity * price) AS total
                 FROM order_items
-                WHERE order_items.order_id = orders.id
-            ), 0)
+                GROUP BY order_id
+            ) oi ON oi.order_id = o.id
+            SET o.total_amount = oi.total
+            WHERE o.total_amount = 0.00
         SQL);
     }
 
