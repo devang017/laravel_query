@@ -10,7 +10,7 @@
 
             <!-- Filters -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex justify-end">
 
                     <div class="flex flex-wrap items-center gap-3">
 
@@ -30,12 +30,10 @@
                             Reset
                         </button>
 
-                    </div>
-
-                    <div>
                         <a href="{{ route('users.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg shadow transition">
                             + Add User
                         </a>
+
                     </div>
 
                 </div>

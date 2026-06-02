@@ -11,52 +11,33 @@
             <!-- Filters -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
 
-                <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex justify-end">
 
                     <div class="flex flex-wrap items-center gap-3">
 
-                        <form action="" method="get">
+                        <form action="" method="get" class="flex flex-wrap items-center gap-3">
+
                             <input type="text" name="search" placeholder="Search Order Number..." class="w-72 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" value="{{ request('search') }}">
 
                             <select name="status" class="border border-gray-300 rounded-lg px-8 py-2">
                                 <option value="">All Order Status</option>
-
-                                <option value="pending" {{ request('status')==='pending' ? 'selected' : '' }}>
-                                    Pending
-                                </option>
-
-                                <option value="processing" {{ request('status')==='processing' ? 'selected' : '' }}>
-                                    Processing
-                                </option>
-
-                                <option value="completed" {{ request('status')==='completed' ? 'selected' : '' }}>
-                                    Completed
-                                </option>
-
-                                <option value="cancelled" {{ request('status')==='cancelled' ? 'selected' : '' }}>
-                                    Cancelled
-                                </option>
+                                <option value="pending" {{ request('status')==='pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="processing" {{ request('status')==='processing' ? 'selected' : '' }}>Processing</option>
+                                <option value="completed" {{ request('status')==='completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="cancelled" {{ request('status')==='cancelled' ? 'selected' : '' }}>Cancelled</option>
                             </select>
 
                             <select name="payment_status" class="border border-gray-300 rounded-lg px-8 py-2">
                                 <option value="">All Payment Status</option>
-
-                                <option value="paid" {{ request('payment_status')==='paid' ? 'selected' : '' }}>
-                                    Paid
-                                </option>
-
-                                <option value="unpaid" {{ request('payment_status')==='unpaid' ? 'selected' : '' }}>
-                                    Unpaid
-                                </option>
-
-                                <option value="refunded" {{ request('payment_status')==='refunded' ? 'selected' : '' }}>
-                                    Refunded
-                                </option>
+                                <option value="paid" {{ request('payment_status')==='paid' ? 'selected' : '' }}>Paid</option>
+                                <option value="unpaid" {{ request('payment_status')==='unpaid' ? 'selected' : '' }}>Unpaid</option>
+                                <option value="refunded" {{ request('payment_status')==='refunded' ? 'selected' : '' }}>Refunded</option>
                             </select>
 
                             <button class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-lg">
                                 Search
                             </button>
+
                         </form>
 
                         <a href="{{ route('orders.index') }}" class="border border-gray-300 hover:bg-gray-100 px-5 py-2 rounded-lg">
