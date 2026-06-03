@@ -13,7 +13,6 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        // Step 1: Build a base query with ONLY the orders table (no joins yet)
         $baseQuery = Order::query()
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->when($request->filled('payment_status'), fn($q) => $q->where('payment_status', $request->payment_status))
@@ -22,7 +21,6 @@ class OrderController extends Controller
                 $q->where('order_number', 'like', "{$search}%");
             });
 
-        // Step 2: If searching by user name/email, get matching user IDs first
         if ($request->filled('search')) {
             $search = $request->search;
             $userIds = DB::table('users')
@@ -35,7 +33,6 @@ class OrderController extends Controller
             }
         }
 
-        // Step 3: Paginate ONLY orders (very fast, no joins)
         $orders = $baseQuery
             ->select([
                 'id',
@@ -50,18 +47,15 @@ class OrderController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // Step 4: Fetch related data ONLY for the 20 paginated order IDs
         $orderIds  = $orders->pluck('id');
         $userIds   = $orders->pluck('user_id')->unique();
 
-        // Users (only 20 users max)
         $users = DB::table('users')
             ->whereIn('id', $userIds)
             ->select('id', 'name', 'email')
             ->get()
             ->keyBy('id');
 
-        // Payments (only 20 orders)
         $payments = DB::table('payments')
             ->whereIn('order_id', $orderIds)
             ->select('order_id', 'payment_method', 'status')
@@ -69,7 +63,6 @@ class OrderController extends Controller
             ->get()
             ->keyBy('order_id');
 
-        // Items count (only 20 orders)
         $itemCounts = DB::table('order_items')
             ->whereIn('order_id', $orderIds)
             ->select('order_id', DB::raw('COUNT(*) as items_count'))
@@ -77,7 +70,6 @@ class OrderController extends Controller
             ->get()
             ->keyBy('order_id');
 
-        // Step 5: Attach related data to each order manually
         $orders->each(function ($order) use ($users, $payments, $itemCounts) {
             $user  = $users->get($order->user_id);
             $pay   = $payments->get($order->id);
@@ -89,8 +81,6 @@ class OrderController extends Controller
             $order->payment_status  = $pay?->status ?? $order->payment_status;
             $order->items_count     = $count?->items_count ?? 0;
         });
-
-
 
         return view('pages.order.index', compact('orders'));
     }
