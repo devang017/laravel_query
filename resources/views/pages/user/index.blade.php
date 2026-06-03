@@ -16,7 +16,7 @@
 
                         <input type="text" placeholder="Search users..." class="w-72 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
 
-                        <select class="border border-gray-300 rounded-lg px-10 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <select class="select2 border border-gray-300 rounded-lg px-10 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -187,3 +187,7 @@
         </div>
     </div>
 </x-app-layout>
+
+<script type="module">
+    $('.select2').select2();
+</script>

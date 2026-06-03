@@ -19,7 +19,7 @@
 
                             <input type="text" name="search" placeholder="Search Order Number..." class="w-72 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" value="{{ request('search') }}">
 
-                            <select name="status" class="border border-gray-300 rounded-lg px-8 py-2">
+                            <select name="status" class="select2 border border-gray-300 rounded-lg px-8 py-2">
                                 <option value="">All Order Status</option>
                                 <option value="pending" {{ request('status')==='pending' ? 'selected' : '' }}>Pending</option>
                                 <option value="processing" {{ request('status')==='processing' ? 'selected' : '' }}>Processing</option>
@@ -27,7 +27,7 @@
                                 <option value="cancelled" {{ request('status')==='cancelled' ? 'selected' : '' }}>Cancelled</option>
                             </select>
 
-                            <select name="payment_status" class="border border-gray-300 rounded-lg px-8 py-2">
+                            <select name="payment_status" class="select2 border border-gray-300 rounded-lg px-8 py-2">
                                 <option value="">All Payment Status</option>
                                 <option value="paid" {{ request('payment_status')==='paid' ? 'selected' : '' }}>Paid</option>
                                 <option value="unpaid" {{ request('payment_status')==='unpaid' ? 'selected' : '' }}>Unpaid</option>
@@ -259,3 +259,7 @@
         </div>
     </div>
 </x-app-layout>
+
+<script type="module">
+    $('.select2').select2();
+</script>
