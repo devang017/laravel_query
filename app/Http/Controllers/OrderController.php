@@ -18,20 +18,20 @@ class OrderController extends Controller
             ->when($request->filled('payment_status'), fn($q) => $q->where('payment_status', $request->payment_status))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $search = $request->search;
-                $q->where('order_number', 'like', "{$search}%");
+                $q->where(function ($q) use ($search) {
+                    $q->where('order_number', 'like', "%{$search}%");
+
+                    $userIds = DB::table('users')
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "{$search}%")
+                        ->pluck('id');
+
+                    if ($userIds->isNotEmpty()) {
+                        $q->orWhereIn('user_id', $userIds);
+                    }
+                });
             });
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $userIds = DB::table('users')
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "{$search}%")
-                ->pluck('id');
-
-            if ($userIds->isNotEmpty()) {
-                $baseQuery->orWhereIn('user_id', $userIds);
-            }
-        }
 
         $orders = $baseQuery
             ->select([
