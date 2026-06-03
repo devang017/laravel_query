@@ -70,7 +70,7 @@ class OrderController extends Controller
             ->whereIn('order_id', $orderIds)
             ->select('order_id', 'quantity', 'price')
             ->get()
-            ->keyBy('order_id');
+            ->groupBy('order_id');
 
         $orders->each(function ($order) use ($users, $payments, $items) {
             $user  = $users->get($order->user_id);
@@ -81,7 +81,7 @@ class OrderController extends Controller
             $order->user_email      = $user?->email;
             $order->payment_method  = $pay?->payment_method;
             $order->payment_status  = $pay?->status ?? $order->payment_status;
-            $order->items           = $itemList;
+            $order->items_order     = $itemList;
         });
 
         return view('pages.order.index', compact('orders'));
