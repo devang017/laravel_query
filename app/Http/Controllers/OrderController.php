@@ -32,7 +32,6 @@ class OrderController extends Controller
                 });
             });
 
-
         $orders = $baseQuery
             ->select([
                 'id',
@@ -42,6 +41,10 @@ class OrderController extends Controller
                 'status',
                 'payment_status',
                 'created_at',
+            ])->addSelect([
+                'items_count' => DB::table('order_items')
+                    ->whereColumn('order_items.order_id', 'orders.id')
+                    ->selectRaw('COUNT(*)')
             ])
             ->orderByDesc('id')
             ->paginate(20)
@@ -63,23 +66,22 @@ class OrderController extends Controller
             ->get()
             ->keyBy('order_id');
 
-        $itemCounts = DB::table('order_items')
+        $items = DB::table('order_items')
             ->whereIn('order_id', $orderIds)
-            ->select('order_id', DB::raw('COUNT(*) as items_count'))
-            ->groupBy('order_id')
+            ->select('order_id', 'quantity', 'price')
             ->get()
             ->keyBy('order_id');
 
-        $orders->each(function ($order) use ($users, $payments, $itemCounts) {
+        $orders->each(function ($order) use ($users, $payments, $items) {
             $user  = $users->get($order->user_id);
             $pay   = $payments->get($order->id);
-            $count = $itemCounts->get($order->id);
+            $itemList = $items->get($order->id) ?? collect();
 
             $order->user_name       = $user?->name;
             $order->user_email      = $user?->email;
             $order->payment_method  = $pay?->payment_method;
             $order->payment_status  = $pay?->status ?? $order->payment_status;
-            $order->items_count     = $count?->items_count ?? 0;
+            $order->items           = $itemList;
         });
 
         return view('pages.order.index', compact('orders'));
