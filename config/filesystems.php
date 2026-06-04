@@ -41,7 +41,16 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/') . '/storage',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'order_export' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/order_export'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/') . '/storage/order_export',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

@@ -19,6 +19,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::resource('users', UserController::class);
     Route::resource('orders', OrderController::class);
+    Route::post('orders/download', [OrderController::class, 'downloadCsv'])->name('order.download');
+    Route::post('orders/download-progress', [OrderController::class, 'checkdownloadCsvStatus'])->name('order.download.process');
+    Route::post('orders/download-link', [OrderController::class, 'downloadCsvLink'])->name('order.download.link');
 });
 
 require __DIR__ . '/auth.php';

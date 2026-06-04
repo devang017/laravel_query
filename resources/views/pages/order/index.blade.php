@@ -17,9 +17,9 @@
 
                         <form action="" method="get" class="flex flex-wrap items-center gap-3">
 
-                            <input type="text" name="search" placeholder="Search Order Number..." class="w-72 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" value="{{ request('search') }}">
+                            <input type="text" name="search" placeholder="Search Order Number..." class="w-72 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" value="{{ request('search') }}" id="search">
 
-                            <select name="status" class="select2 border border-gray-300 rounded-lg px-8 py-2">
+                            <select name="status" class="select2 border border-gray-300 rounded-lg px-8 py-2" id="status">
                                 <option value="">All Order Status</option>
                                 <option value="pending" {{ request('status')==='pending' ? 'selected' : '' }}>Pending</option>
                                 <option value="processing" {{ request('status')==='processing' ? 'selected' : '' }}>Processing</option>
@@ -27,7 +27,7 @@
                                 <option value="cancelled" {{ request('status')==='cancelled' ? 'selected' : '' }}>Cancelled</option>
                             </select>
 
-                            <select name="payment_status" class="select2 border border-gray-300 rounded-lg px-8 py-2">
+                            <select name="payment_status" class="select2 border border-gray-300 rounded-lg px-8 py-2" id="payment_status">
                                 <option value="">All Payment Status</option>
                                 <option value="paid" {{ request('payment_status')==='paid' ? 'selected' : '' }}>Paid</option>
                                 <option value="unpaid" {{ request('payment_status')==='unpaid' ? 'selected' : '' }}>Unpaid</option>
@@ -43,6 +43,10 @@
                         <a href="{{ route('orders.index') }}" class="border border-gray-300 hover:bg-gray-100 px-5 py-2 rounded-lg">
                             Reset
                         </a>
+
+                        <button class="border border-gray-300 hover:bg-gray-100 px-5 py-2 rounded-lg" id="csv-download" data-batch-id="{{ $exportBatchId }}" @disabled($exportBatchId)>
+                            Download CSV
+                        </button>
 
                     </div>
 
@@ -261,5 +265,112 @@
 </x-app-layout>
 
 <script type="module">
-    $('.select2').select2();
+    setInterval(check_export_progress, 4000);
+
+    function check_export_progress() {
+
+        if ($('#csv-download').data('batch-id')) {
+
+            if (!$('#csv-download').prop('disabled')) {
+               $('#csv-download').prop('disabled', true)
+            }
+
+            var export_bus_batch_id = $('#csv-download').data('batch-id');
+
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                type: "POST",
+                url: "{{ route('order.download.process') }}",
+                data: {
+                    "batch_id": export_bus_batch_id,
+                },
+                dataType: 'json',
+                success: function (response) {
+                    // console.log(response.progress);
+                    if (response.status == 'success') {
+                        if (response.data.progress >= 100) {
+                            $('#csv-download').prop('disabled', false);
+                            $('#csv-download').text("Download CSV");
+                            downloadExportFile(response.data.filename)
+                        } else {
+                            $('#csv-download').text(response.data.progress+'%');
+                        }
+                    } else {
+                        $('#csv-download').data('batch-id', null);
+                        $("body").removeClass("page-loading");
+                        toastr.error(response.message);
+                    }
+                }
+            });
+        }
+    }
+
+    function downloadExportFile(filename) {
+
+        $.ajax({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            type: "POST",
+            url: "{{ route('order.download.link') }}",
+            data: {
+                "batch_id": $('#csv-download').data('batch-id')
+            },
+            xhrFields: {
+                responseType: 'blob' // Set the responseType to 'blob'
+            },
+            success: function (response) {
+                $('#csv-download').data('batch-id', null);
+                $('#csv-download').prop('disabled', false);
+                const url = window.URL.createObjectURL(response);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                location.reload(true);
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                toastr.success("File Downloaded successfully.");
+            }
+        });
+    }
+    $(document).ready(function(){
+
+        $('.select2').select2();
+
+        $(document).on('click', '#csv-download', function(){
+
+            $('#csv-download').prop('disabled', true);
+            $('#csv-download').text("0%");
+
+        $.ajax({
+                type: 'POST',
+                url: "{{ route('order.download') }}",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    search: $('#search').val(),
+                    status: $('#status').val(),
+                    payment_status: $('#payment_status').val()
+                },
+                success: function(response) {
+                    switch (response.status) {
+                        case 'success':
+                            $('#csv-download').data('batch-id', response.data);
+                            toastr.success(response.message);
+                            break;
+                        case 'error':
+                            $('#csv-download').prop('disabled', false);
+                            $('#csv-download').text("Download CSV");
+                            toastr.error(response.message);
+                            break;
+                    }
+                }
+            });
+        });
+    });
+
+
 </script>

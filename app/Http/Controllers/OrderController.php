@@ -2,9 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DownloadOrderList;
+use App\Jobs\ExportOrderData;
 use App\Models\Order;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
 
 class OrderController extends Controller
 {
@@ -84,7 +91,9 @@ class OrderController extends Controller
             $order->items_order     = $itemList;
         });
 
-        return view('pages.order.index', compact('orders'));
+        $exportBatchId = Cache::get('export_order' . auth()->id()) ?? null;
+
+        return view('pages.order.index', compact('orders', 'exportBatchId'));
     }
 
     /**
@@ -133,5 +142,76 @@ class OrderController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function downloadCsv(Request $request)
+    {
+        $fileName = $fileName = 'orders_export_' .
+            substr(md5(auth()->id() . config('app.key')), 0, 10)
+            . '.csv';
+
+        $batch = Bus::batch([])->name($fileName)->dispatch();
+
+        if (!isset($batch->id)) {
+            return response()->json(['status' => 'error', 'message' => "File Exports is in Progress", 'data' => $batch->id]);
+        }
+
+        if (Storage::disk('order_export')->exists($fileName)) {
+            Storage::disk('order_export')->delete($fileName);
+        }
+
+        ExportOrderData::dispatch(auth()->id(), $request->all(), $batch->id);
+        Cache::put('export_order' . auth()->id(), $batch->id, now()->addMinutes(60));
+
+        return response()->json(['status' => 'success', 'message' => "File Exports is in Progress", 'data' => $batch->id]);
+    }
+
+    /**
+     * checkdownloadCsvStatus function
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function checkdownloadCsvStatus(Request $request)
+    {
+        $batchProgress = 0;
+        $batchName = '';
+        if (isset($request->batch_id) && !empty($request->batch_id)) {
+            $batch = Bus::findBatch($request->batch_id);
+            $batchProgress = $batch->progress();
+            $batchName = $batch?->name;
+            if (!empty($batch->failedJobs)) {
+                Cache::forget('export_order' . auth()->id());
+                if (Storage::disk('order_export')->exists($batch->name)) {
+                    Storage::disk('order_export')->delete($batch->name);
+                }
+                throw new Exception("Something went wrong.");
+            }
+        }
+
+        $data = ['progress' => $batchProgress, 'filename' => $batchName];
+
+        return response()->json(['status' => 'success', 'message' => "File Exports is in Progress", 'data' => $data]);
+    }
+
+    /**
+     * downloadBuylist function
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function downloadCsvLink(Request $request)
+    {
+        $file = '';
+        if (isset($request->batch_id) && !empty($request->batch_id)) {
+            $batch = Bus::findBatch($request->batch_id);
+
+            Cache::forget('export_order' . auth()->id());
+
+            if (Storage::disk('order_export')->exists($batch->name)) {
+                $file = Storage::disk('order_export')->path($batch->name);
+            }
+        }
+        return response()->download($file)->deleteFileAfterSend(false);
     }
 }
